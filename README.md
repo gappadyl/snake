@@ -1,1 +1,2 @@
-Dylan Gappa 2022\nA snake game made in python.
+Dylan Gappa 2022
+A python snake game I make to practice my Vim.
