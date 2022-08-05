@@ -17,7 +17,6 @@ class Snake:
 		self.velocity = [1, 0]
 
 	def update_velocity(self):
-		print(self.position)	
 		if (int(self.position[0]) % int(self.size)) + (int(self.position[1]) % int(self.size)) == 0:
 			if self.direction == 0:
 				self.velocity = [1, 0]
@@ -27,7 +26,11 @@ class Snake:
 				self.velocity = [0, -1]
 			elif self.direction == 3:
 				self.velocity = [0, 1]
-
+			
+			return True
+		
+		return False
+	
 	def move(self, time_difference):
 		time_difference = int(time_difference)
 		self.position[0] += time_difference * self.velocity[0]
@@ -51,29 +54,32 @@ def main():
 	update_rate = 3 
 
 	last_tick = current_milli_time() 
-	direction = 0	
+	direction_queue = []	
 	while 1:
 		current_tick = current_milli_time()
 		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				sys.exit()
-
-		if pressed_keys[pygame.K_RIGHT]:
-			direction = 0	
-		elif pressed_keys[pygame.K_LEFT]:
-       			direction = 1 
-		elif pressed_keys[pygame.K_UP]:
-       			direction = 2 
-		elif pressed_keys[pygame.K_DOWN]:
-			direction = 3
-		
-		snake.update_direction(direction)	
-		snake.update_velocity()
+			elif event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_RIGHT:
+					direction_queue.append(0)	
+				elif event.key == pygame.K_LEFT:
+       					direction_queue.append(1) 
+				elif event.key == pygame.K_UP:
+       					direction_queue.append(2) 
+				elif event.key == pygame.K_DOWN:
+					direction_queue.append(3)
+				
 		if current_tick - last_tick > update_rate:
+			if len(direction_queue) > 0:
+				snake.update_direction(direction_queue[0])
+			
+			if snake.update_velocity() and len(direction_queue) > 0:
+				direction_queue.pop(0)
+			
 			snake.move((current_tick - last_tick) / update_rate)
 			last_tick = current_milli_time()
-		
 		screen.fill((0,0,0))
 		pygame.draw.rect(screen, (255, 255, 255), snake.rect)
 		pygame.display.flip()
