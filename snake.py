@@ -1,19 +1,25 @@
+import random
 import sys
 import pygame
 import time
 
 class Game:
-    def __init__(self):
-        self.points = 0 
+	def __init__(self):
+		self.points = 0
+		self.apple = self.apple_position = [30 * random.randint(0, 19), 30 * random.randint(0, 19)] 
+		self.apple_rect = pygame.Rect(self.apple_position[0], self.apple_position[1], 30, 30)
+
+	def reset_apple(self):
+		self.apple_position = [30 * random.randint(0, 19), 30 * random.randint(0, 19)] 
+		self.apple_rect.update(self.apple_position[0], self.apple_position[1], 30, 30)
 
 class Snake:
-	def __init__(self, size):
+	def __init__(self):
 		self.length = 1
 		self.position = [300, 300]
-		self.size = size
+		self.size = 30
 		self.direction = 0
-		self.isAlive = True
-		self.rect = pygame.Rect(self.position[0], self.position[1], size, size)
+		self.rect = pygame.Rect(self.position[0], self.position[1], self.size, self.size)
 		self.velocity = [1, 0]
 
 	def update_velocity(self):
@@ -41,7 +47,7 @@ class Snake:
 		if self.direction + direction == 1 or self.direction + direction == 5:
 			return
 	
-		self.direction = direction 
+		self.direction = direction
 
 def current_milli_time():
 	return round(time.time() * 1000)
@@ -49,8 +55,9 @@ def current_milli_time():
 def main():
 	pygame.init()
 	screen = pygame.display.set_mode(size=(600,600))
-	snake = Snake(size=30)
-	game = Game
+	game_bounds = pygame.Rect(0, 0, 600, 600)	
+	snake = Snake()
+	game = Game()
 	update_rate = 3 
 
 	last_tick = current_milli_time() 
@@ -58,10 +65,22 @@ def main():
 	while 1:
 		current_tick = current_milli_time()
 		pressed_keys = pygame.key.get_pressed()
+
+		if snake.rect.colliderect(game.apple_rect):
+			game.points += 1	
+			game.reset_apple()
+		
+		if not game_bounds.contains(snake.rect):
+			snake = Snake()
+			game = Game()
+			last_tick = current_milli_time()
+			direction_queue = []	
+			continue
+			
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				sys.exit()
-			elif event.type == pygame.KEYDOWN:
+			elif event.type == pygame.KEYDOWN and len(direction_queue) < 2:
 				if event.key == pygame.K_RIGHT:
 					direction_queue.append(0)	
 				elif event.key == pygame.K_LEFT:
@@ -82,6 +101,7 @@ def main():
 			last_tick = current_milli_time()
 		screen.fill((0,0,0))
 		pygame.draw.rect(screen, (255, 255, 255), snake.rect)
+		pygame.draw.rect(screen, (255, 0, 0), game.apple_rect)	
 		pygame.display.flip()
              
 
