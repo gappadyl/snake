@@ -1,3 +1,4 @@
+import math
 import random
 import sys
 import pygame
@@ -16,14 +17,13 @@ class Game:
 class Snake:
 	def __init__(self):
 		self.length = 1
-		self.position = [300, 300]
 		self.size = 30
 		self.direction = 0
-		self.rect = pygame.Rect(self.position[0], self.position[1], self.size, self.size)
+		self.body = [pygame.Rect(300, 300, self.size, self.size)]
 		self.velocity = [1, 0]
 
 	def update_velocity(self):
-		if (int(self.position[0]) % int(self.size)) + (int(self.position[1]) % int(self.size)) == 0:
+		if (int(self.body[0].left) % int(self.size)) + (int(self.body[0].top) % int(self.size)) == 0:
 			if self.direction == 0:
 				self.velocity = [1, 0]
 			elif self.direction == 1:
@@ -39,10 +39,25 @@ class Snake:
 	
 	def move(self, time_difference):
 		time_difference = int(time_difference)
+		head_position = self.position	
 		self.position[0] += time_difference * self.velocity[0]
 		self.position[1] += time_difference * self.velocity[1]
-		self.rect.move_ip(time_difference * self.velocity[0], time_difference * self.velocity[1])
-
+	
+		num_segments = len(self.body)
+		for i in range(num_segments - 1, 0, -1):	
+			if int(self.body[i - 1].left / 30) == int(self.body[i].left / 30) and math.ceil(self.body[i - 1].left / 30) == math.ceil(self.body[i].left / 30):
+				if self.body[i - 1].top > self.body[i].top:	
+					self.body[i].move_ip(0, time_difference * 1)
+				elif self.body[i - 1].top < self.body[i].top: 
+					self.body[i].move_ip(0, time_difference * -1)	
+			else:
+				if self.body[i - 1].left > self.body[i].left:
+					self.body[i].move_ip(time_difference * 1, 0)
+				elif self.body[i - 1].left < self.body[i].left: 
+					self.body[i].move_ip(time_difference * -1, 0)	
+		
+		self.body[0].move_ip(time_difference * self.velocity[0], time_difference * self.velocity[1])
+	
 	def update_direction(self, direction):
 		if self.direction + direction == 1 or self.direction + direction == 5:
 			return
@@ -66,17 +81,17 @@ def main():
 		current_tick = current_milli_time()
 		pressed_keys = pygame.key.get_pressed()
 
-		if snake.rect.colliderect(game.apple_rect):
+		if snake.body[0].colliderect(game.apple_rect):
 			game.points += 1	
 			game.reset_apple()
 		
-		if not game_bounds.contains(snake.rect):
+		if not game_bounds.contains(snake.body[0]):
 			snake = Snake()
 			game = Game()
 			last_tick = current_milli_time()
 			direction_queue = []	
 			continue
-			
+		
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				sys.exit()
@@ -100,7 +115,8 @@ def main():
 			snake.move((current_tick - last_tick) / update_rate)
 			last_tick = current_milli_time()
 		screen.fill((0,0,0))
-		pygame.draw.rect(screen, (255, 255, 255), snake.rect)
+		for segment in snake.body:	
+			pygame.draw.rect(screen, (255, 255, 255), segment)
 		pygame.draw.rect(screen, (255, 0, 0), game.apple_rect)	
 		pygame.display.flip()
              
