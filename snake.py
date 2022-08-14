@@ -37,32 +37,49 @@ class Snake:
 		
 		return False
 	
-	def move(self, time_difference):
-		time_difference = int(time_difference)
-		head_position = self.position	
-		self.position[0] += time_difference * self.velocity[0]
-		self.position[1] += time_difference * self.velocity[1]
-	
+	def move(self):
 		num_segments = len(self.body)
 		for i in range(num_segments - 1, 0, -1):	
-			if int(self.body[i - 1].left / 30) == int(self.body[i].left / 30) and math.ceil(self.body[i - 1].left / 30) == math.ceil(self.body[i].left / 30):
+			if self.body[i].left % self.size == 0 and self.body[i].top % self.size != 0:
 				if self.body[i - 1].top > self.body[i].top:	
-					self.body[i].move_ip(0, time_difference * 1)
+					self.body[i].move_ip(0, 1)
 				elif self.body[i - 1].top < self.body[i].top: 
-					self.body[i].move_ip(0, time_difference * -1)	
+					self.body[i].move_ip(0, -1)	
+			elif self.body[i].left % self.size != 0 and self.body[i].top % self.size == 0:
+				if self.body[i - 1].left > self.body[i].left:
+					self.body[i].move_ip(1, 0)
+				elif self.body[i - 1].left < self.body[i].left: 
+					self.body[i].move_ip(-1, 0)
 			else:
 				if self.body[i - 1].left > self.body[i].left:
-					self.body[i].move_ip(time_difference * 1, 0)
+					self.body[i].move_ip(1, 0)
 				elif self.body[i - 1].left < self.body[i].left: 
-					self.body[i].move_ip(time_difference * -1, 0)	
+					self.body[i].move_ip(-1, 0)
+				elif self.body[i - 1].top > self.body[i].top:	
+					self.body[i].move_ip(0, 1)
+				elif self.body[i - 1].top < self.body[i].top: 
+					self.body[i].move_ip(0, -1)	
 		
-		self.body[0].move_ip(time_difference * self.velocity[0], time_difference * self.velocity[1])
+		self.body[0].move_ip(self.velocity[0], self.velocity[1])
 	
 	def update_direction(self, direction):
 		if self.direction + direction == 1 or self.direction + direction == 5:
 			return
 	
 		self.direction = direction
+
+	def check_body_collision(self):
+		num_segments = len(self.body)
+		for i in range(2, num_segments):
+			if self.body[i].colliderect(self.body[0]):
+				return True	
+		return False
+
+	def append_segment(self):
+		num_segments = len(self.body)
+		tail = pygame.Rect.copy(self.body[num_segments - 1])
+		tail.move_ip(-self.size, 0)
+		self.body.append(tail)	
 
 def current_milli_time():
 	return round(time.time() * 1000)
@@ -84,14 +101,15 @@ def main():
 		if snake.body[0].colliderect(game.apple_rect):
 			game.points += 1	
 			game.reset_apple()
+			snake.append_segment()
 		
-		if not game_bounds.contains(snake.body[0]):
+		if not game_bounds.contains(snake.body[0]) or snake.check_body_collision():
 			snake = Snake()
 			game = Game()
 			last_tick = current_milli_time()
 			direction_queue = []	
 			continue
-		
+	
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				sys.exit()
@@ -112,7 +130,7 @@ def main():
 			if snake.update_velocity() and len(direction_queue) > 0:
 				direction_queue.pop(0)
 			
-			snake.move((current_tick - last_tick) / update_rate)
+			snake.move()
 			last_tick = current_milli_time()
 		screen.fill((0,0,0))
 		for segment in snake.body:	
