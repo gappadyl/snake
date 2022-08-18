@@ -75,10 +75,32 @@ class Snake:
 				return True	
 		return False
 
-	def append_segment(self):
+	def append_segment(self):		
 		num_segments = len(self.body)
-		tail = pygame.Rect.copy(self.body[num_segments - 1])
-		tail.move_ip(-self.size, 0)
+		tail = pygame.Rect.copy(self.body[num_segments - 1])	
+		if num_segments < 2:	
+			tail.move_ip(self.size * -self.velocity[0], self.size * -self.velocity[1])
+		else:
+			if self.body[num_segments - 1].left % self.size == 0 and self.body[num_segments - 1].top % self.size != 0:
+				if self.body[num_segments - 2].top > self.body[num_segments - 1].top:	
+					tail.move_ip(0, -self.size)
+				elif self.body[num_segments - 2].top < self.body[num_segments - 1].top: 
+					tail.move_ip(0, self.size)	
+			elif self.body[num_segments - 1].left % self.size != 0 and self.body[num_segments - 1].top % self.size == 0:
+				if self.body[num_segments - 2].left > self.body[num_segments - 1].left:
+					tail.move_ip(-self.size, 0)
+				elif self.body[num_segments - 2].left < self.body[num_segments - 1].left: 
+					tail.move_ip(self.size, 0)
+			else:
+				if self.body[num_segments - 2].left > self.body[num_segments - 1].left:
+					tail.move_ip(-self.size, 0)
+				elif self.body[num_segments - 2].left < self.body[num_segments - 1].left: 
+					tail.move_ip(self.size, 0)
+				elif self.body[num_segments - 2].top > self.body[num_segments - 1].top:	
+					tail.move_ip(0, -self.size)
+				elif self.body[num_segments - 2].top < self.body[num_segments - 1].top: 
+					tail.move_ip(0, self.size)	
+					
 		self.body.append(tail)	
 
 def current_milli_time():
@@ -90,7 +112,7 @@ def main():
 	game_bounds = pygame.Rect(0, 0, 600, 600)	
 	snake = Snake()
 	game = Game()
-	update_rate = 3 
+	update_rate = 2 
 
 	last_tick = current_milli_time() 
 	direction_queue = []	
@@ -99,8 +121,15 @@ def main():
 		pressed_keys = pygame.key.get_pressed()
 
 		if snake.body[0].colliderect(game.apple_rect):
-			game.points += 1	
+			game.points += 1
 			game.reset_apple()
+			valid_pos = False	
+			while not valid_pos:	
+				valid_pos = True	
+				for r in snake.body:
+					if r.colliderect(game.apple_rect):
+						game.reset_apple()
+						valid_pos = False
 			snake.append_segment()
 		
 		if not game_bounds.contains(snake.body[0]) or snake.check_body_collision():
